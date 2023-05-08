@@ -31,20 +31,24 @@ def add_item(
     name: str = Form(...), category: str = Form(...), image: UploadFile = File(...)
 ):
     logger.info(f"Receive item: {name}, {category}, {image.filename}")
+    logger.info(image.size)
 
     # get hash and save image
-    image_hash = hashlib.sha256(image.file.read()).hexdigest()
-    path = "images/" + image_hash + ".jpg"
-    with open(path, "wb") as buffer:
-        buffer.write(image.file.read())
+    file = image.file.read()
+    image_hash = hashlib.sha256(file).hexdigest()
+    image_filename = image_hash + ".jpg"
+    path = "images/" + image_filename
+    with open(path, "wb") as f:
+        f.write(file)
 
     # update json
     with open("items.json", "r") as f:
         di = json.load(f)
     if not "items" in di:
         di["items"] = []
-    logger.info(di["items"])
-    di["items"].append({"name": name, "category": category})
+    di["items"].append(
+        {"name": name, "category": category, "image_filename": image_filename}
+    )
 
     with open("items.json", "w") as f:
         json.dump(di, f)
@@ -56,6 +60,21 @@ def get_item():
     with open("items.json", "r") as f:
         di = json.load(f)
     return di
+
+
+@app.get("/items/{item_id}")
+def get_item(item_id: int):
+    with open("items.json", "r") as f:
+        di = json.load(f)
+    if not "items" in di:
+        raise HTTPException(
+            status_code=500, detail="'items' key not found in items.json"
+        )
+    if len(di["items"]) <= item_id:
+        raise HTTPException(
+            status_code=404, detail=f"item_id {item_id} not found in items.json"
+        )
+    return di["items"][item_id]
 
 
 @app.get("/image/{image_filename}")
