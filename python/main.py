@@ -31,7 +31,6 @@ def add_item(
     name: str = Form(...), category: str = Form(...), image: UploadFile = File(...)
 ):
     logger.info(f"Receive item: {name}, {category}, {image.filename}")
-    logger.info(image.size)
 
     # get hash and save image
     file = image.file.read()
