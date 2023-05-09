@@ -55,7 +55,7 @@ def add_item(
 
 
 @app.get("/items")
-def get_item():
+def list_item():
     with open("items.json", "r") as f:
         di = json.load(f)
     return di
@@ -67,7 +67,7 @@ def get_item(item_id: int):
         di = json.load(f)
     if not "items" in di:
         raise HTTPException(
-            status_code=500, detail="'items' key not found in items.json"
+            status_code=404, detail="'items' key not found in items.json"
         )
     if len(di["items"]) <= item_id:
         raise HTTPException(
