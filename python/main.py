@@ -4,8 +4,8 @@ import pathlib
 from fastapi import FastAPI, Form, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-import json
 import hashlib
+import sqlite3
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -35,64 +35,49 @@ def add_item(
     # get hash and save image
     file = image.file.read()
     image_hash = hashlib.sha256(file).hexdigest()
-    image_filename = image_hash + ".jpg"
-    path = "images/" + image_filename
+    image_name = image_hash + ".jpg"
+    path = "images/" + image_name
     with open(path, "wb") as f:
         f.write(file)
 
-    # update json
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    if not "items" in di:
-        di["items"] = []
-    di["items"].append(
-        {"name": name, "category": category, "image_filename": image_filename}
+    # add item
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    cur = con.cursor()
+    cur.execute(
+        f"insert into items(name, category, image_name) values('{name}', '{category}', '{image_name}')"
     )
+    con.commit()
 
-    with open("items.json", "w") as f:
-        json.dump(di, f)
     return {"message": f"item received: {name}"}
 
 
 @app.get("/items")
 def list_item():
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    return di
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    cur = con.cursor()
+    res = cur.execute("select * from items")
+    con.commit()
+    return res.fetchall()
 
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    try:
-        return di["items"][item_id]
-    except KeyError:
-        raise HTTPException(
-            status_code=404, detail="'items' key not found in items.json"
-        )
-    except IndexError:
-        raise HTTPException(
-            status_code=404, detail=f"item_id {item_id} not found in items.json"
-        )
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    cur = con.cursor()
+    res = cur.execute(f"select * from items where id={item_id}")
+    con.commit()
+    return res.fetchall()
 
 
 @app.get("/search")
 def get_items_with_keyword(keyword: str):
     logger.info(f"Search keyword: {keyword}")
-    with open("items.json", "r") as f:
-        di = json.load(f)
 
-    if not "items" in di:
-        raise HTTPException(
-            status_code=404, detail="'items' key not found in items.json"
-        )
-    # collect all items whose name is keyword
-    items_keyword = []
-    for item in di["items"]:
-        if item["name"] == keyword:
-            items_keyword.append(item)
-    return {"items": items_keyword}
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    cur = con.cursor()
+    res = cur.execute(f"select * from items where name='{keyword}'")
+    con.commit()
+    return res.fetchall()
 
 
 @app.get("/image/{image_filename}")
