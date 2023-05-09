@@ -75,7 +75,7 @@ def list_item():
             category.name as category,
             items.image_name
         from items
-        inner join category
+        left outer join category
         on items.category=category.id
         """,
     ).fetchall()
@@ -96,7 +96,7 @@ def get_item(item_id: int):
             category.name as category,
             items.image_name
         from items
-        inner join category
+        left outer join category
         on items.category=category.id
         where items.id=?
         """,
@@ -129,7 +129,7 @@ def get_items_with_keyword(keyword: str):
             category.name as category,
             items.image_name
         from items
-        inner join category
+        left outer join category
         on items.category=category.id
         where items.name=?
         """,

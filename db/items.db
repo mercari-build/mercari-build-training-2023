@@ -7,5 +7,5 @@ create table items(
 
 create table category(
         id integer primary key,
-        name text
+        name text unique
 );
