@@ -1,6 +1,11 @@
 create table items(
-        id integer,
+        id integer primary key,
         name text,
-        category text,
+        category integer,
         image_name text
+);
+
+create table category(
+        id integer primary key,
+        name text
 );
