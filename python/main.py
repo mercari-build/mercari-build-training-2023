@@ -65,15 +65,16 @@ def list_item():
 def get_item(item_id: int):
     with open("items.json", "r") as f:
         di = json.load(f)
-    if not "items" in di:
+    try:
+        return di["items"][item_id]
+    except KeyError:
         raise HTTPException(
             status_code=404, detail="'items' key not found in items.json"
         )
-    if len(di["items"]) <= item_id:
+    except IndexError:
         raise HTTPException(
             status_code=404, detail=f"item_id {item_id} not found in items.json"
         )
-    return di["items"][item_id]
 
 
 @app.get("/image/{image_filename}")
