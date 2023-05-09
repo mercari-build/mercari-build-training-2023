@@ -44,15 +44,16 @@ def add_item(
     cur = con.cursor()
 
     # search category id
-    cur.execute(f"insert or ignore into category(name) values('{category}')")
+    cur.execute("insert or ignore into category(name) values(?)", (category,))
     category_id = cur.execute(
-        f"select id from category where name='{category}'"
+        "select id from category where name=?", (category,)
     ).fetchone()[0]
     logger.info(f"Success to get category id: {category_id}")
 
     # add item
     cur.execute(
-        f"insert into items(name, category, image_name) values('{name}', {category_id}, '{image_name}')"
+        "insert into items(name, category, image_name) values(?, ?, ?)",
+        (name, category_id, image_name),
     )
     con.commit()
 
@@ -72,7 +73,7 @@ def list_item():
 def get_item(item_id: int):
     con = sqlite3.connect("../db/mercari.sqlite3")
     cur = con.cursor()
-    res = cur.execute(f"select * from items where id={item_id}")
+    res = cur.execute(f"select * from items where id=?", (item_id,))
     con.commit()
     return res.fetchall()
 
@@ -83,7 +84,7 @@ def get_items_with_keyword(keyword: str):
 
     con = sqlite3.connect("../db/mercari.sqlite3")
     cur = con.cursor()
-    res = cur.execute(f"select * from items where name='{keyword}'")
+    res = cur.execute(f"select * from items where name=?", (keyword,))
     con.commit()
     return res.fetchall()
 
