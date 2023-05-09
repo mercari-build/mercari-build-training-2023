@@ -45,6 +45,7 @@ def add_item(
 
     # search category id
     cur.execute("insert or ignore into category(name) values(?)", (category,))
+    con.commit()
     category_id = cur.execute(
         "select id from category where name=?", (category,)
     ).fetchone()[0]
@@ -56,6 +57,7 @@ def add_item(
         (name, category_id, image_name),
     )
     con.commit()
+    con.close()
 
     return {"message": f"item received: {name}"}
 
@@ -63,19 +65,53 @@ def add_item(
 @app.get("/items")
 def list_item():
     con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute("select * from items")
-    con.commit()
-    return res.fetchall()
+    res = cur.execute(
+        """
+        select
+            items.id,
+            items.name,
+            category.name as category,
+            items.image_name
+        from items
+        inner join category
+        on items.category=category.id
+        """,
+    ).fetchall()
+    con.close()
+    return res
 
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
     con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute(f"select * from items where id=?", (item_id,))
-    con.commit()
-    return res.fetchall()
+    res = cur.execute(
+        """
+        select
+            items.id,
+            items.name,
+            category.name as category,
+            items.image_name
+        from items
+        inner join category
+        on items.category=category.id
+        where items.id=?
+        """,
+        (item_id,),
+    ).fetchone()
+
+    if res is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    return res
+
+
+def dict_factory(cursor, row):
+    fields = [column[0] for column in cursor.description]
+    return {key: value for key, value in zip(fields, row)}
 
 
 @app.get("/search")
@@ -83,10 +119,24 @@ def get_items_with_keyword(keyword: str):
     logger.info(f"Search keyword: {keyword}")
 
     con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute(f"select * from items where name=?", (keyword,))
-    con.commit()
-    return res.fetchall()
+    res = cur.execute(
+        """
+        select
+            items.id,
+            items.name,
+            category.name as category,
+            items.image_name
+        from items
+        inner join category
+        on items.category=category.id
+        where items.name=?
+        """,
+        (keyword,),
+    ).fetchall()
+    con.close()
+    return res
 
 
 @app.get("/image/{image_filename}")
