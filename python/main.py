@@ -40,11 +40,19 @@ def add_item(
     with open(path, "wb") as f:
         f.write(file)
 
-    # add item
     con = sqlite3.connect("../db/mercari.sqlite3")
     cur = con.cursor()
+
+    # search category id
+    cur.execute(f"insert or ignore into category(name) values('{category}')")
+    category_id = cur.execute(
+        f"select id from category where name='{category}'"
+    ).fetchone()[0]
+    logger.info(f"Success to get category id: {category_id}")
+
+    # add item
     cur.execute(
-        f"insert into items(name, category, image_name) values('{name}', '{category}', '{image_name}')"
+        f"insert into items(name, category, image_name) values('{name}', {category_id}, '{image_name}')"
     )
     con.commit()
 
