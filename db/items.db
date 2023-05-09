@@ -1,0 +1,6 @@
+create table items(
+        id integer,
+        name text,
+        category text,
+        image_name text
+);
