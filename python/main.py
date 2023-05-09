@@ -77,6 +77,24 @@ def get_item(item_id: int):
         )
 
 
+@app.get("/search")
+def get_items_with_keyword(keyword: str):
+    logger.info(f"Search keyword: {keyword}")
+    with open("items.json", "r") as f:
+        di = json.load(f)
+
+    if not "items" in di:
+        raise HTTPException(
+            status_code=404, detail="'items' key not found in items.json"
+        )
+    # collect all items whose name is keyword
+    items_keyword = []
+    for item in di["items"]:
+        if item["name"] == keyword:
+            items_keyword.append(item)
+    return {"items": items_keyword}
+
+
 @app.get("/image/{image_filename}")
 async def get_image(image_filename):
     # Create image path
