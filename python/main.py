@@ -21,6 +21,11 @@ app.add_middleware(
 )
 
 
+def dict_factory(cursor, row):
+    fields = [column[0] for column in cursor.description]
+    return {key: value for key, value in zip(fields, row)}
+
+
 @app.get("/")
 def root():
     return {"message": "Hello, world!"}
@@ -107,11 +112,6 @@ def get_item(item_id: int):
         raise HTTPException(status_code=404, detail="Item not found")
 
     return res
-
-
-def dict_factory(cursor, row):
-    fields = [column[0] for column in cursor.description]
-    return {key: value for key, value in zip(fields, row)}
 
 
 @app.get("/search")
