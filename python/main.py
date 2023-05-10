@@ -67,23 +67,24 @@ def add_item(
     return {"message": f"item received: {name}"}
 
 
+select_command = """
+    select
+        items.id,
+        items.name,
+        category.name as category,
+        items.image_name
+    from items
+    left outer join category
+    on items.category=category.id
+    """
+
+
 @app.get("/items")
 def list_item():
     con = sqlite3.connect("../db/mercari.sqlite3")
     con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute(
-        """
-        select
-            items.id,
-            items.name,
-            category.name as category,
-            items.image_name
-        from items
-        left outer join category
-        on items.category=category.id
-        """,
-    ).fetchall()
+    res = cur.execute(select_command).fetchall()
     con.close()
     return res
 
@@ -93,20 +94,7 @@ def get_item(item_id: int):
     con = sqlite3.connect("../db/mercari.sqlite3")
     con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute(
-        """
-        select
-            items.id,
-            items.name,
-            category.name as category,
-            items.image_name
-        from items
-        left outer join category
-        on items.category=category.id
-        where items.id=?
-        """,
-        (item_id,),
-    ).fetchone()
+    res = cur.execute(select_command + "where items.id=?", (item_id,)).fetchone()
     con.close()
 
     if res is None:
@@ -122,20 +110,7 @@ def get_items_with_keyword(keyword: str):
     con = sqlite3.connect("../db/mercari.sqlite3")
     con.row_factory = dict_factory
     cur = con.cursor()
-    res = cur.execute(
-        """
-        select
-            items.id,
-            items.name,
-            category.name as category,
-            items.image_name
-        from items
-        left outer join category
-        on items.category=category.id
-        where items.name=?
-        """,
-        (keyword,),
-    ).fetchall()
+    res = cur.execute(select_command + "where items.name=?", (keyword,)).fetchall()
     con.close()
     return res
 
