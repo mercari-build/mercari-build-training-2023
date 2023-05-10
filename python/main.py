@@ -51,17 +51,22 @@ def add_item(name: str = Form(...), category: str = Form(...), image: str = Form
              "category": f"{category}",
              "image_filename" : f"{hash_img}"
             }]}
-    try:
-        with open('items.json', 'r') as f:
-            read_data = json.load(f)
-            save_data = [read_data, log]
-            with open('items.json', 'w') as f:
-                json.dump(save_data, f)
-    # Error handling 
-    except FileNotFoundError:
-        with open('items.json', 'w+') as f:
-            json.dump(log, f)
-    # items.jsonが存在していて、中身が空のときバグる(エラー処理方法わからない)
+    
+    # if json file is empty
+    if os.path.getsize('items.json')== 0:
+        with open('items.json', 'w') as f:
+                json.dump(log, f)
+    else:
+        try:
+            with open('items.json', 'r') as f:
+                read_data = json.load(f)
+                save_data = [read_data, log]
+                with open('items.json', 'w') as f:
+                    json.dump(save_data, f)
+        # Error handling 
+        except FileNotFoundError:
+            with open('items.json', 'w+') as f:
+                json.dump(log, f)
 
     return ({"message": f"item received: {name}"})
 
