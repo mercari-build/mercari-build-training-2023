@@ -46,9 +46,11 @@ def get_items():
                 "image_filename": row["image_filename"]
             }
             items.append(item)
+        if len(items) == 0:
+            return {"message": "Items not found"}
         return {"items": items}
     except:
-        return {"message": "Items not registered"}
+        raise HTTPException(status_code=500, detail="Failed to search items from the database")
     finally:
         conn.close()
 
@@ -78,7 +80,7 @@ def search_items(keyword: str):
             return {"message": "Item not found"}
         return {"items": items}
     except:
-        return {"message": "Failed to search items"}
+        raise HTTPException(status_code=500, detail="Failed to search items from the database")
     finally:
         conn.close()
 
@@ -122,7 +124,8 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
         conn.commit()
     except:
         conn.rollback()
-        return {"message": "Failed to add item to the database"}
+        raise HTTPException(status_code=500, detail="Failed to add item to the database")
     finally:
         conn.close()
-    return {"message": f"received item:{name} category:{category}"}
+    logger.debug(f"received item: {name} category: {category}")
+    return {"message": "Succeed to add item"}
