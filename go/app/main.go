@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -20,18 +22,63 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+type Item struct {
+	Name     string `json:"name"`
+	Category string `json:"category"`
+}
+
+type Json struct {
+	Items []Item `json:"item"`
+}
+
 func root(c echo.Context) error {
 	res := Response{Message: "Hello, world!"}
 	return c.JSON(http.StatusOK, res)
+}
+
+func getItem(c echo.Context) error {
+	currentFileBytes, err := ioutil.ReadFile("app/items.json")
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, string(currentFileBytes))
+}
+
+func updateFileJson(item Item) error {
+	var currentFile Json
+	currentFileBytes, err := ioutil.ReadFile("app/items.json")
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(currentFileBytes, &currentFile)
+	if err != nil {
+		return err
+	}
+	currentFile.Items = append(currentFile.Items, item)
+	newFileBytes, err := json.Marshal(currentFile)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("app/items.json", newFileBytes, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func addItem(c echo.Context) error {
 	// Get form data
 	name := c.FormValue("name")
 	category := c.FormValue("category")
-	c.Logger().Infof("Receive item: %s %s", name, category)
+	item := Item{Name: name, Category: category}
+	err := updateFileJson(item)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	message := fmt.Sprintf("item received: %s, %s", name, category)
+	c.Logger().Infof("Receive item: %s", name)
+
+	message := fmt.Sprintf("item received: %s", name)
 	res := Response{Message: message}
 
 	return c.JSON(http.StatusOK, res)
@@ -71,6 +118,7 @@ func main() {
 
 	// Routes
 	e.GET("/", root)
+	e.GET("/items", getItem)
 	e.POST("/items", addItem)
 	e.GET("/image/:imageFilename", getImg)
 
