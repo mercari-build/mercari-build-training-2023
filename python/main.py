@@ -33,7 +33,7 @@ def get_items():
             items = data.get("items", [])
         return {"items": items}
     except:
-        return {"message": "Items not registered"}
+        raise HTTPException(status_code=500, detail="Items not registered")
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
@@ -49,12 +49,9 @@ def get_item(item_id: int):
                     "category": item.get("category"),
                     "image_filename": item.get("image_filename")
                 }
-            else:
-                return {
-                    {"message": "Item not found"}
-                }
+            raise HTTPException(status_code=404, detail="Item not found")
     except:
-        return {"message": "Items not registered"}
+        raise HTTPException(status_code=500, detail="Items not registered")
 
 @app.get("/image/{image_filename}")
 def get_image(image_filename):
@@ -96,4 +93,5 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
     with open("items.json", "w") as f:
         json.dump({"items": items}, f)
 
-    return {"message": f"received item:{name} category:{category}"}
+    logger.debug(f"received item: {name} category: {category}")
+    return {"message": f"succeed to add item"}
