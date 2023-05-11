@@ -1,8 +1,8 @@
 import os
 import logging
 import pathlib
-import json
 import hashlib
+import sqlite3
 from fastapi import FastAPI, Form, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +12,7 @@ logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 logger.setLevel(logging.DEBUG)
 images = pathlib.Path(__file__).parent.resolve() / "images"
-origins = [ os.environ.get('FRONT_URL', 'http://localhost:3000') ]
+origins = [ os.environ.get("FRONT_URL", "http://localhost:3000") ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -27,34 +27,60 @@ def root():
 
 @app.get("/items")
 def get_items():
+    conn = sqlite3.connect("../db/mercari.sqlite3")
+    conn.row_factory = sqlite3.Row
     try:
-        with open("items.json", "r") as f:
-            data = json.load(f)
-            items = data.get("items", [])
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT items.id, items.name, category.name as category, items.image_filename
+            FROM items
+            JOIN category ON items.category_id = category.id
+            """)
+        rows = cur.fetchall()
+        items = []
+        for row in rows:
+            item = {
+                "id": row["id"],
+                "name": row["name"],
+                "category": row["category"],
+                "image_filename": row["image_filename"]
+            }
+            items.append(item)
         return {"items": items}
     except:
         return {"message": "Items not registered"}
+    finally:
+        conn.close()
 
-@app.get("/items/{item_id}")
-def get_item(item_id: int):
+@app.get("/search")
+def search_items(keyword: str):
+    conn = sqlite3.connect("../db/mercari.sqlite3")
+    conn.row_factory = sqlite3.Row
     try:
-        with open("items.json", "r") as f:
-            data = json.load(f)
-            items = data.get("items", [])
-            found_items = [item for item in items if item.get("id") == item_id]
-            if found_items:
-                item = found_items[0]
-                return {
-                    "name": item.get("name"),
-                    "category": item.get("category"),
-                    "image_filename": item.get("image_filename")
-                }
-            else:
-                return {
-                    {"message": "Item not found"}
-                }
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT items.id, items.name, category.name as category, items.image_filename
+            FROM items
+            JOIN category ON items.category_id = category.id
+            WHERE items.name LIKE ?
+            """, ('%' + keyword + '%',))
+        rows = cur.fetchall()
+        items = []
+        for row in rows:
+            item = {
+                "id": row["id"],
+                "name": row["name"],
+                "category": row["category"],
+                "image_filename": row["image_filename"]
+            }
+            items.append(item)
+        if len(items) == 0:
+            return {"message": "Item not found"}
+        return {"items": items}
     except:
-        return {"message": "Items not registered"}
+        return {"message": "Failed to search items"}
+    finally:
+        conn.close()
 
 @app.get("/image/{image_filename}")
 def get_image(image_filename):
@@ -80,20 +106,23 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
     with open(path_image_file , "wb") as f:
         f.write(content_image)
 
-    # Save in json
-    new_item = {"name": name, "category": category, "image_filename": image_filename}
+    # Save in database
+    conn = sqlite3.connect("../db/mercari.sqlite3")
     try:
-        with open("items.json", "r") as f:
-            data = json.load(f)
-            items = data.get("items", [])
-            new_item["id"] = len(items)
-            items.append(new_item)
-    #If "items.json" file doesn't exist, items load only new_item
-    except FileNotFoundError:
-        new_item["id"] = 0
-        items = [new_item]
-
-    with open("items.json", "w") as f:
-        json.dump({"items": items}, f)
-
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM category WHERE name=?", (category,))
+        result = cur.fetchone()
+        if result:
+            category_id = result[0]
+        # If category doesn't exist, insert a data
+        else:
+            cur.execute("INSERT INTO category (name) VALUES (?)", (category,))
+            category_id = cur.lastrowid
+        cur.execute("INSERT INTO items (name, category_id, image_filename) VALUES (?, ?, ?)", (name, category_id, image_filename))
+        conn.commit()
+    except:
+        conn.rollback()
+        return {"message": "Failed to add item to the database"}
+    finally:
+        conn.close()
     return {"message": f"received item:{name} category:{category}"}
