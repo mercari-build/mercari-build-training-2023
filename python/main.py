@@ -4,8 +4,8 @@ import pathlib
 from fastapi import FastAPI, Form, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-import json
 import hashlib
+import sqlite3
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -19,6 +19,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+
+
+def dict_factory(cursor, row):
+    fields = [column[0] for column in cursor.description]
+    return {key: value for key, value in zip(fields, row)}
 
 
 @app.get("/")
@@ -35,46 +40,79 @@ def add_item(
     # get hash and save image
     file = image.file.read()
     image_hash = hashlib.sha256(file).hexdigest()
-    image_filename = image_hash + ".jpg"
-    path = "images/" + image_filename
+    image_name = image_hash + ".jpg"
+    path = "images/" + image_name
     with open(path, "wb") as f:
         f.write(file)
 
-    # update json
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    if not "items" in di:
-        di["items"] = []
-    di["items"].append(
-        {"name": name, "category": category, "image_filename": image_filename}
-    )
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    cur = con.cursor()
 
-    with open("items.json", "w") as f:
-        json.dump(di, f)
+    # search category id
+    cur.execute("insert or ignore into category(name) values(?)", (category,))
+    con.commit()
+    category_id = cur.execute(
+        "select id from category where name=?", (category,)
+    ).fetchone()[0]
+    logger.info(f"Success to get category id: {category_id}")
+
+    # add item
+    cur.execute(
+        "insert into items(name, category, image_name) values(?, ?, ?)",
+        (name, category_id, image_name),
+    )
+    con.commit()
+    con.close()
+
     return {"message": f"item received: {name}"}
+
+
+select_command = """
+    select
+        items.id,
+        items.name,
+        category.name as category,
+        items.image_name
+    from items
+    left outer join category
+    on items.category=category.id
+    """
 
 
 @app.get("/items")
 def list_item():
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    return di
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
+    cur = con.cursor()
+    res = cur.execute(select_command).fetchall()
+    con.close()
+    return res
 
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
-    with open("items.json", "r") as f:
-        di = json.load(f)
-    try:
-        return di["items"][item_id]
-    except KeyError:
-        raise HTTPException(
-            status_code=404, detail="'items' key not found in items.json"
-        )
-    except IndexError:
-        raise HTTPException(
-            status_code=404, detail=f"item_id {item_id} not found in items.json"
-        )
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
+    cur = con.cursor()
+    res = cur.execute(select_command + "where items.id=?", (item_id,)).fetchone()
+    con.close()
+
+    if res is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    return res
+
+
+@app.get("/search")
+def get_items_with_keyword(keyword: str):
+    logger.info(f"Search keyword: {keyword}")
+
+    con = sqlite3.connect("../db/mercari.sqlite3")
+    con.row_factory = dict_factory
+    cur = con.cursor()
+    res = cur.execute(select_command + "where items.name=?", (keyword,)).fetchall()
+    con.close()
+    return res
 
 
 @app.get("/image/{image_filename}")
