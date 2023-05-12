@@ -1,0 +1,25 @@
+{
+    "items": [
+        {
+            "id": "1",
+            "name": "jacket",
+            "category": "fashion"
+        },
+        {
+            "id": "2",
+            "name": "buri",
+            "category": "sakana"
+        },
+        {
+            "id": "3",
+            "name": "tuntun",
+            "category": "capybara"
+        },
+        {
+            "id": "53506604-2797-4d70-9aec-b0957c3ced6d",
+            "name": "mei",
+            "category": "kinoko",
+            "image": "ad55d25f2c10c56522147b214aeed7ad13319808d7ce999787ac8c239b24f71d.jpg"
+        }
+    ]
+}
