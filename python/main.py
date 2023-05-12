@@ -19,6 +19,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+sqlite_path = "../db/mercari.sqlite3"
 
 
 def dict_factory(cursor, row):
@@ -45,7 +46,7 @@ def add_item(
     with open(path, "wb") as f:
         f.write(file)
 
-    con = sqlite3.connect("../db/mercari.sqlite3")
+    con = sqlite3.connect(sqlite_path)
     cur = con.cursor()
 
     # search category id
@@ -81,7 +82,7 @@ select_command = """
 
 @app.get("/items")
 def list_item():
-    con = sqlite3.connect("../db/mercari.sqlite3")
+    con = sqlite3.connect(sqlite_path)
     con.row_factory = dict_factory
     cur = con.cursor()
     res = cur.execute(select_command).fetchall()
@@ -91,7 +92,7 @@ def list_item():
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
-    con = sqlite3.connect("../db/mercari.sqlite3")
+    con = sqlite3.connect(sqlite_path)
     con.row_factory = dict_factory
     cur = con.cursor()
     res = cur.execute(select_command + "where items.id=?", (item_id,)).fetchone()
@@ -107,7 +108,7 @@ def get_item(item_id: int):
 def get_items_with_keyword(keyword: str):
     logger.info(f"Search keyword: {keyword}")
 
-    con = sqlite3.connect("../db/mercari.sqlite3")
+    con = sqlite3.connect(sqlite_path)
     con.row_factory = dict_factory
     cur = con.cursor()
     res = cur.execute(select_command + "where items.name=?", (keyword,)).fetchall()
