@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	_ "io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -25,6 +28,7 @@ type Response struct {
 type Item struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
+	Image    string `json:"image_filename"`
 }
 
 type Json struct {
@@ -37,44 +41,48 @@ func root(c echo.Context) error {
 }
 
 func getItem(c echo.Context) error {
-	currentFileBytes, err := ioutil.ReadFile("app/items.json")
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, string(currentFileBytes))
+	res := getJsonfile("app/items.json")
+	return c.JSON(http.StatusOK, res)
+}
+
+func getItemWithId(c echo.Context) error {
+	idString := c.Param("id")
+	id, _ := strconv.Atoi(idString)
+	currentFile := getJsonfile("app/items.json")
+	res := currentFile.Items[id-1]
+	return c.JSON(http.StatusOK, res)
 }
 
 func updateFileJson(item Item) error {
-	var currentFile Json
-	currentFileBytes, err := ioutil.ReadFile("app/items.json")
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(currentFileBytes, &currentFile)
-	if err != nil {
-		return err
-	}
+	currentFile := getJsonfile("app/items.json")
 	currentFile.Items = append(currentFile.Items, item)
-	newFileBytes, err := json.Marshal(currentFile)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("app/items.json", newFileBytes, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	err := currentFile.creatNewJsonfile("app/items.json")
+	return err
+}
+
+func getJsonfile(filename string) Json {
+	var currentFile Json
+	currentFileBytes, _ := os.ReadFile(filename)
+	_ = json.Unmarshal(currentFileBytes, &currentFile)
+	return currentFile
+}
+
+func (j Json) creatNewJsonfile(filename string) error {
+	newFileBytes, _ := json.Marshal(j)
+	err := os.WriteFile(filename, newFileBytes, 0644)
+	return err
 }
 
 func addItem(c echo.Context) error {
 	// Get form data
 	name := c.FormValue("name")
 	category := c.FormValue("category")
-	item := Item{Name: name, Category: category}
-	err := updateFileJson(item)
-	if err != nil {
-		fmt.Println(err)
-	}
+	imagePass := c.FormValue("image")
+	imageFile, _ := os.ReadFile(imagePass)
+	imageHash32bytes := sha256.Sum256(imageFile)
+	image := hex.EncodeToString(imageHash32bytes[:]) + ".jpg"
+	item := Item{Name: name, Category: category, Image: image}
+	_ = updateFileJson(item)
 
 	c.Logger().Infof("Receive item: %s", name)
 
@@ -121,6 +129,7 @@ func main() {
 	e.GET("/items", getItem)
 	e.POST("/items", addItem)
 	e.GET("/image/:imageFilename", getImg)
+	e.GET("/items/:id", getItemWithId)
 
 	// Start server
 	e.Logger.Fatal(e.Start(":9000"))

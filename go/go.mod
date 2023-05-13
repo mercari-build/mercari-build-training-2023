@@ -1,6 +1,6 @@
 module mercari-build-training-2023
 
-go 1.17
+go 1.18
 
 require (
 	github.com/labstack/echo/v4 v4.7.2
