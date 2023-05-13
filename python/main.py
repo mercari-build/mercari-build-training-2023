@@ -20,6 +20,7 @@ app.add_middleware(
     allow_methods=["GET","POST","PUT","DELETE"],
     allow_headers=["*"],
 )
+path_db = "../db/mercari.sqlite3"
 
 @app.get("/")
 def root():
@@ -27,7 +28,7 @@ def root():
 
 @app.get("/items")
 def get_items():
-    conn = sqlite3.connect("../db/mercari.sqlite3")
+    conn = sqlite3.connect(path_db)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.cursor()
@@ -56,7 +57,7 @@ def get_items():
 
 @app.get("/search")
 def search_items(keyword: str):
-    conn = sqlite3.connect("../db/mercari.sqlite3")
+    conn = sqlite3.connect(path_db)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.cursor()
@@ -109,7 +110,7 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
         f.write(content_image)
 
     # Save in database
-    conn = sqlite3.connect("../db/mercari.sqlite3")
+    conn = sqlite3.connect(path_db)
     try:
         cur = conn.cursor()
         cur.execute("SELECT id FROM category WHERE name=?", (category,))
