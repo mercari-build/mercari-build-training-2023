@@ -1,0 +1,19 @@
+{
+	"items": [
+		{
+			"name": "jacket",
+			"category": "fashion",
+			"image_filename": "4f134e650ee07eab514c2c9572392e485784969e6af8e61743b2c42e6a55a0ba.jpg"
+		},
+		{
+			"name": "rose",
+			"category": "flower",
+			"image_filename": "954349a049165daf48d3b7b674a0ca9c10092fe23607f4baa6465a182898854f.jpg"
+		},
+		{
+			"name": "apple",
+			"category": "fruit",
+			"image_filename": ""
+		}
+	]
+}
