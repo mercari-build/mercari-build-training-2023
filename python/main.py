@@ -74,7 +74,7 @@ select_command = """
         items.id,
         items.name,
         category.name as category,
-        items.image_name
+        items.image_name as image_filename
     from items
     left outer join category
     on items.category=category.id
