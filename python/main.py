@@ -31,6 +31,13 @@ def dict_factory(cursor, row):
 def root():
     return {"message": "Hello, world!"}
 
+def get_hash_save_image(image: UploadFile):
+    file = image.file.read()
+    image_hash = hashlib.sha256(file).hexdigest()
+    path = images / (image_hash + ".jpg")
+    with open(path.resolve(), "wb") as f:
+        f.write(file)
+    return path
 
 @app.post("/items")
 def add_item(
@@ -38,13 +45,7 @@ def add_item(
 ):
     logger.info(f"Receive item: {name}, {category}, {image.filename}")
 
-    # get hash and save image
-    file = image.file.read()
-    image_hash = hashlib.sha256(file).hexdigest()
-    image_name = image_hash + ".jpg"
-    path = "images/" + image_name
-    with open(path, "wb") as f:
-        f.write(file)
+    path = get_hash_save_image(image)
 
     con = sqlite3.connect(sqlite_path)
     cur = con.cursor()
@@ -60,7 +61,7 @@ def add_item(
     # add item
     cur.execute(
         "insert into items(name, category, image_name) values(?, ?, ?)",
-        (name, category_id, image_name),
+        (name, category_id, path.name),
     )
     con.commit()
     con.close()
@@ -99,7 +100,7 @@ def get_item(item_id: int):
     con.close()
 
     if res is None:
-        raise HTTPException(status_code=404, detail="Item not found")
+        return []
 
     return res
 
