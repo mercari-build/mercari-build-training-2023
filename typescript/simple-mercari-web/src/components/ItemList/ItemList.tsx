@@ -53,7 +53,7 @@ export const ItemList: React.FC<Prop> = (props) => {
                     <div key={item.id} className='ItemList'>
                         <img src={server.concat('/image/', item.image_filename)} height="200" />
                         <p>
-                            <span>Name: {item.name}</span>
+                            <span>{item.name}</span>
                             <br />
                             <span>Category: {item.category}</span>
                         </p>
