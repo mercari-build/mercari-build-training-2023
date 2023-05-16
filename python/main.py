@@ -105,8 +105,7 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
     content_image = await image.read()
     hash_object = hashlib.sha256(content_image)
     image_filename = hash_object.hexdigest() + ".jpg"
-    path_image_file = image_filename
-    with open(path_image_file , "wb") as f:
+    with open(image_filename , "wb") as f:
         f.write(content_image)
 
     # Save in database
