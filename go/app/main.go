@@ -77,10 +77,7 @@ func addItem(c echo.Context) error {
 	// Get form data
 	name := c.FormValue("name")
 	category := c.FormValue("category")
-	imagePass := c.FormValue("image")
-	imageFile, _ := os.ReadFile(imagePass)
-	imageHash32bytes := sha256.Sum256(imageFile)
-	image := hex.EncodeToString(imageHash32bytes[:]) + ".jpg"
+	image := imageToHash(c.FormValue("image"))
 	item := Item{Name: name, Category: category, Image: image}
 	_ = updateFileJson(item)
 
@@ -90,6 +87,13 @@ func addItem(c echo.Context) error {
 	res := Response{Message: message}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+func imageToHash(imagePass string) string {
+	imageFile, _ := os.ReadFile(imagePass)
+	imageHash32bytes := sha256.Sum256(imageFile)
+	image := hex.EncodeToString(imageHash32bytes[:]) + ".jpg"
+	return image
 }
 
 func getImg(c echo.Context) error {
