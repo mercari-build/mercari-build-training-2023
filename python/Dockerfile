@@ -8,8 +8,8 @@ COPY python/requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY python .
-COPY db/mercari.sqlite3 .
+COPY python/* .
+COPY db/* db/
 
 EXPOSE 9000
 

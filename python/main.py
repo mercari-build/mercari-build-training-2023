@@ -20,7 +20,7 @@ app.add_middleware(
     allow_methods=["GET","POST","PUT","DELETE"],
     allow_headers=["*"],
 )
-path_db = "mercari.sqlite3"
+path_db = "db/mercari.sqlite3"
 
 @app.get("/")
 def root():
@@ -105,7 +105,7 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
     content_image = await image.read()
     hash_object = hashlib.sha256(content_image)
     image_filename = hash_object.hexdigest() + ".jpg"
-    path_image_file = "images/"+ image_filename
+    path_image_file = image_filename
     with open(path_image_file , "wb") as f:
         f.write(content_image)
 
