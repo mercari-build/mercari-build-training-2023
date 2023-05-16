@@ -14,7 +14,6 @@ interface Item {
 };
 
 const server = process.env.REACT_APP_API_URL || 'http://127.0.0.1:9000';
-const placeholderImage = process.env.PUBLIC_URL + '/logo192.png';
 
 interface Prop {
     reload?: boolean;
@@ -52,7 +51,7 @@ export const ItemList: React.FC<Prop> = (props) => {
     }, [reload]);
 
     return (
-        <Grid container spacing={2} p={2} >
+        <Grid container spacing={2}>
             {
                 items.map((item) => {
                     console.log(item.image_filename);
