@@ -1,4 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import CardMedia from '@mui/material/CardMedia';
+import Grid from '@mui/material/Grid';
+import SellIcon from '@mui/icons-material/Sell';
+
 
 interface Item {
     id: number;
@@ -46,20 +52,31 @@ export const ItemList: React.FC<Prop> = (props) => {
     }, [reload]);
 
     return (
-        <div>
-            {items.map((item) => {
-                console.log(item.image_filename);
-                return (
-                    <div key={item.id} className='ItemList'>
-                        <img src={server.concat('/image/', item.image_filename)} height="200" />
-                        <p>
-                            <span>{item.name}</span>
-                            <br />
-                            <span>Category: {item.category}</span>
-                        </p>
-                    </div>
-                )
-            })}
-        </div>
+        <Grid container spacing={2} p={2} >
+            {
+                items.map((item) => {
+                    console.log(item.image_filename);
+                    return (
+                        <Grid item xs={6} sm={3} key={item.id} >
+                            <Card sx={{ minHeight: 200 }}>
+                                <CardMedia
+                                    component="img"
+                                    height="200"
+                                    src={server.concat('/image/', item.image_filename)}
+                                    alt={item.name}
+                                />
+                                <Typography variant="h5" component="div" sx={{ p: 1 }}>
+                                    {item.name}
+                                </Typography>
+                                <Typography sx={{ pl: 1 }} color="text.secondary" >
+                                    <SellIcon fontSize="inherit" color="action" />
+                                    {item.category}
+                                </Typography>
+                            </Card>
+                        </Grid>
+                    )
+                })
+            }
+        </Grid >
     )
 };
