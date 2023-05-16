@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS "category" (
+  "id" integer NOT NULL,
+  "name" text NOT NULL UNIQUE,
+  PRIMARY KEY ("id")
+);
+
+CREATE TABLE IF NOT EXISTS "items" (
+  "id" integer NOT NULL,
+  "name" text NOT NULL,
+  "category_id" integer NOT NULL ,
+  "image_name" text NOT NULL,
+  PRIMARY KEY ("id")
+  FOREIGN KEY ("category_id") REFERENCES category ("id")
+);
