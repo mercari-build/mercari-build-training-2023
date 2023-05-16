@@ -12,7 +12,7 @@ logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 logger.setLevel(logging.DEBUG)
 images = pathlib.Path(__file__).parent.resolve() / "images"
-origins = [ os.environ.get("FRONT_URL", "http://localhost:3000") ]
+origins = [ os.environ.get("FRONT_URL", "http://localhost:9000") ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_methods=["GET","POST","PUT","DELETE"],
     allow_headers=["*"],
 )
-path_db = "../db/mercari.sqlite3"
+path_db = "mercari.sqlite3"
 
 @app.get("/")
 def root():
