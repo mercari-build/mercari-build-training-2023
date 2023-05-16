@@ -78,7 +78,7 @@ def search_items(keyword: str):
             }
             items.append(item)
         if len(items) == 0:
-            return {"message": "Item not found"}
+            raise HTTPException(status_code=404, detail="Failed to search items from the database")
         return {"items": items}
     except:
         raise HTTPException(status_code=500, detail="Failed to search items from the database")
