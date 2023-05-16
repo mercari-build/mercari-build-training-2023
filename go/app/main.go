@@ -18,6 +18,8 @@ import (
 
 const (
 	ImgDir = "images"
+	dbType = "sqlite3"
+	dbPath = "mercari.sqlite3"
 )
 
 type Response struct {
@@ -30,7 +32,7 @@ func root(c echo.Context) error {
 }
 
 func addItem(c echo.Context) error {
-	database, err := db.OpenDb("sqlite3", "mercari.sqlite3")
+	database, err := db.OpenDb(dbType, dbPath)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
 		return err
@@ -109,7 +111,7 @@ func addItem(c echo.Context) error {
 }
 
 func getItems(c echo.Context) error {
-	database, err := db.OpenDb("sqlite3", "mercari.sqlite3")
+	database, err := db.OpenDb(dbType, dbPath)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
 		return err
@@ -125,7 +127,7 @@ func getItems(c echo.Context) error {
 
 func searchItems(c echo.Context) error {
 	// open the database
-	database, err := db.OpenDb("sqlite3", "mercari.sqlite3")
+	database, err := db.OpenDb(dbType, dbPath)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
 		return err
@@ -150,7 +152,7 @@ func getItemsDetail(c echo.Context) error {
 		return err
 	}
 	// database operation
-	database, err := db.OpenDb("sqlite3", "mercari.sqlite3")
+	database, err := db.OpenDb(dbType, dbPath)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
 		return err
