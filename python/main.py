@@ -46,10 +46,9 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     logger.info(f"Receive item: {category}")
     logger.info(f"Receive item: {image}")
     image = images / image.filename
-    data = sqlite3.connect()
     try:
-      with open(image, "rb") as im:
-          image_hash = hashlib.sha256(im.read()).hexdigest()
+        with open(image, "rb") as im:
+            image_hash = hashlib.sha256(im.read()).hexdigest()
     except IOError:
         logger.info("couldn't open the file")
     image_filename = str(image_hash) + ".jpg"
@@ -65,8 +64,8 @@ def show_item():
 @app.get("/items/{item_id}")
 def item_id(item_id: int):
     try:
-      with open("items.json", "r") as f:
-          data = json.load(f)
+        with open("items.json", "r") as f:
+            data = json.load(f)
     except IOError:
         logger.info("couldn't open the file")
     items = data.get("items", [])
