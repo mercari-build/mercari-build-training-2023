@@ -13,7 +13,7 @@ app = FastAPI()
 logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 images = pathlib.Path(__file__).parent.resolve() / "images"
-database_path = "../db/mercari.sqlite3"
+# items_filename = images = pathlib.Path(__file__).parent.resolve() / "items.json"
 origins = [ os.environ.get('FRONT_URL', 'http://localhost:3000') ]
 app.add_middleware(
     CORSMiddleware,
@@ -23,18 +23,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# def save_items(name, category, image_filename):
-#     with open('items.json', 'r') as f:
-#         data = json.load(f)
-#     with open("items.json", "w") as f:
-#         data["items"].append({"name": name, "category": category, "image_filename": image_filename})
-#         json.dump(data, f)
-
-def dict_items(cur, row):
-    dictionary = {}
-    for idx, col in enumerate(cur.description):
-        dictionary[col[0]] = row[idx]
-    return dictionary
+def save_items(name, category, image_filename):
+    try:
+        with open('items.json', 'r') as f:
+            data = json.load(f)
+    except IOError:
+        logger.info("file doesn't exist")
+    try:
+        with open("items.json", "w") as f:
+            data["items"].append({"name": name, "category": category, "image_filename": image_filename})
+            json.dump(data, f)
+    except IOError:
+        logger.info("file doesn't exist")
 
 @app.get("/")
 def root():
@@ -46,42 +46,32 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     logger.info(f"Receive item: {category}")
     logger.info(f"Receive item: {image}")
     image = images / image.filename
-
-    with open(image, "rb") as im:
-        image_hash = hashlib.sha256(im.read()).hexdigest()
-    image_filename = str(image_hash) + ".jpg"
+    data = sqlite3.connect()
     try:
-        data = sqlite3.connect(database_path)
-        cur = data.cursor()
-        with cur:
-            cur.execute("INSERT INTO category (name) VALUES(?)", (category, ))
-        category_id = cur.lastrowid
-        with cur:
-            cur.execute("INSERT INTO items (name, category_id, image_filename) VALUES(?, ?, ?)", (name, category_id, image_filename))
-        data.close()
-    except sqlite3.Error as e:
-        logger.error(f"Error connecting to the database: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+      with open(image, "rb") as im:
+          image_hash = hashlib.sha256(im.read()).hexdigest()
+    except IOError:
+        logger.info("couldn't open the file")
+    image_filename = str(image_hash) + ".jpg"
+    save_items(name, category, image_filename)
     return {"message": f"item received: {name}, {category}, {image}"}
 
 @app.get("/items")
 def show_item():
-    try:
-        data = sqlite3.connect(database_path)
-        data.row_factory = dict_items
-        cur = data.cursor()
-        cur.execute("SELECT items.id, items.name, category.name as category, items.image_filename FROM items inner join category on items.category_id = category.id")
-        items = {"items": cur.fetchall()}
-        data.close()
-    except sqlite3.Error as e:
-        logger.error(f"Error connecting to the database: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    return items
+    with open("items.json", "r") as f:
+        data = json.load(f)
+    return data
 
 @app.get("/items/{item_id}")
 def item_id(item_id: int):
-    with open("items.json", "r") as f:
-        data = json.load(f)
+    try:
+      with open("items.json", "r") as f:
+          data = json.load(f)
+    except IOError:
+        logger.info("couldn't open the file")
+    items = data.get("items", [])
+    if item_id < 1 or item_id > len(items):
+        raise HTTPException(status_code=404, detail="Item not found")
     return data["items"][item_id-1]
 
 @app.get("/image/{image_filename}")
@@ -97,19 +87,3 @@ async def get_image(image_filename):
         image = images / "default.jpg"
 
     return FileResponse(image)
-
-@app.get("/search")
-def search(keyword: str):
-    try:
-        data = sqlite3.connect(database_path)
-        data.row_factory = dict_items
-        cur = data.cursor()
-        match_keyword = '%' + keyword + '%'
-        cur.execute("SELECT items.id, items.name, category.name AS category, items.image_filename FROM items inner join category on items.category_id = category.id WHERE items.name LIKE ?", (match_keyword,))
-        items = {"items": cur.fetchall()}
-        data.close()
-    except sqlite3.Error as e:
-        logger.error(f"Error connecting to the database: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    return items
-
