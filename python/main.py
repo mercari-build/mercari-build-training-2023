@@ -13,7 +13,7 @@ app = FastAPI()
 logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 images = pathlib.Path(__file__).parent.resolve() / "images"
-database_path = "../db/mercari.sqlite3"
+# items_filename = images = pathlib.Path(__file__).parent.resolve() / "items.json"
 origins = [ os.environ.get('FRONT_URL', 'http://localhost:3000') ]
 app.add_middleware(
     CORSMiddleware,
@@ -23,18 +23,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# def save_items(name, category, image_filename):
-#     with open('items.json', 'r') as f:
-#         data = json.load(f)
-#     with open("items.json", "w") as f:
-#         data["items"].append({"name": name, "category": category, "image_filename": image_filename})
-#         json.dump(data, f)
-
-def dict_items(cur, row):
-    dictionary = {}
-    for idx, col in enumerate(cur.description):
-        dictionary[col[0]] = row[idx]
-    return dictionary
+def save_items(name, category, image_filename):
+    try:
+        with open('items.json', 'r') as f:
+            data = json.load(f)
+    except IOError:
+        print("The file you are trying to access does not exist")
+    try:
+        with open("items.json", "w") as f:
+            data["items"].append({"name": name, "category": category, "image_filename": image_filename})
+            json.dump(data, f)
+    except IOError:
+        print("The file in which you are trying to write does not exist")
 
 @app.get("/")
 def root():
@@ -46,35 +46,26 @@ def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile
     logger.info(f"Receive item: {category}")
     logger.info(f"Receive item: {image}")
     image = images / image.filename
-    data = sqlite3.connect(database_path)
-    cur = data.cursor()
+    data = sqlite3.connect()
     with open(image, "rb") as im:
         image_hash = hashlib.sha256(im.read()).hexdigest()
     image_filename = str(image_hash) + ".jpg"
-
-    cur.execute("INSERT INTO category (name) VALUES(?)", (category, ))
-    data.commit()
-    category_id = cur.lastrowid
-    cur.execute("INSERT INTO items (name, category_id, image_filename) VALUES(?, ?, ?)", (name, category_id, image_filename))
-    data.commit()
-    data.close()
-
+    save_items(name, category, image_filename)
     return {"message": f"item received: {name}, {category}, {image}"}
 
 @app.get("/items")
 def show_item():
-    data = sqlite3.connect(database_path)
-    data.row_factory = dict_items
-    cur = data.cursor()
-    cur.execute("SELECT items.id, items.name, category.name as category, items.image_filename FROM items inner join category on items.category_id = category.id")
-    items = {"items": cur.fetchall()}
-    data.close()
-    return items
+    with open("items.json", "r") as f:
+        data = json.load(f)
+    return data
 
 @app.get("/items/{item_id}")
 def item_id(item_id: int):
     with open("items.json", "r") as f:
         data = json.load(f)
+    items = data.get("items", [])
+    if item_id < 1 or item_id > len(items):
+        raise HTTPException(status_code=404, detail="Item not found")
     return data["items"][item_id-1]
 
 @app.get("/image/{image_filename}")
@@ -90,14 +81,3 @@ async def get_image(image_filename):
         image = images / "default.jpg"
 
     return FileResponse(image)
-
-@app.get("/search")
-def search(keyword: str):
-    data = sqlite3.connect(database_path)
-    data.row_factory = dict_items
-    cur = data.cursor()
-    cur.execute("SELECT items.id, items.name, category.name AS category, items.image_filename FROM items inner join category on items.category_id = category.id WHERE items.name LIKE ?", ('%' + keyword + '%',))
-    items = {"items": cur.fetchall()}
-    data.close()
-    return items
-
