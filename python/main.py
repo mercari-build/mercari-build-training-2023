@@ -11,8 +11,7 @@ app = FastAPI()
 logger = logging.getLogger("uvicorn")
 logger.level = logging.INFO
 logger.setLevel(logging.DEBUG)
-images = pathlib.Path(__file__).parent.resolve() / "images"
-origins = [ os.environ.get("FRONT_URL", "http://localhost:9000") ]
+origins = [ os.environ.get("FRONT_URL", "http://localhost:3000") ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -20,7 +19,10 @@ app.add_middleware(
     allow_methods=["GET","POST","PUT","DELETE"],
     allow_headers=["*"],
 )
-path_db = "db/mercari.sqlite3"
+work_dir = pathlib.Path(__file__).parent.resolve()
+PATH_DB = "db/mercari.sqlite3"
+PATH_IMAGES = work_dir
+PATH_DEFAULT_IMAGE = work_dir / "default_images"
 
 @app.get("/")
 def root():
@@ -28,7 +30,7 @@ def root():
 
 @app.get("/items")
 def get_items():
-    conn = sqlite3.connect(path_db)
+    conn = sqlite3.connect(PATH_DB)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.cursor()
@@ -57,7 +59,7 @@ def get_items():
 
 @app.get("/search")
 def search_items(keyword: str):
-    conn = sqlite3.connect(path_db)
+    conn = sqlite3.connect(PATH_DB)
     conn.row_factory = sqlite3.Row
     try:
         cur = conn.cursor()
@@ -88,15 +90,16 @@ def search_items(keyword: str):
 @app.get("/image/{image_filename}")
 def get_image(image_filename):
     # Create image path
-    image = images / image_filename
+    image_path = PATH_IMAGES / image_filename
 
     if not image_filename.endswith(".jpg"):
         raise HTTPException(status_code=400, detail="Image path does not end with .jpg")
-    if not image.exists():
-        logger.debug(f"Image not found: {image}")
-        image = images / "default.jpg"
 
-    return FileResponse(image)
+    if not image_path.exists():
+        default_image_path = PATH_DEFAULT_IMAGE / "default.jpg"
+        return FileResponse(str(default_image_path))
+
+    return FileResponse(str(image_path))
 
 @app.post("/items")
 async def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile = File(...)):
@@ -109,7 +112,7 @@ async def add_item(name: str = Form(...), category: str = Form(...), image: Uplo
         f.write(content_image)
 
     # Save in database
-    conn = sqlite3.connect(path_db)
+    conn = sqlite3.connect(PATH_DB)
     try:
         cur = conn.cursor()
         cur.execute("SELECT id FROM category WHERE name=?", (category,))

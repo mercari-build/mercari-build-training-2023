@@ -7,8 +7,7 @@ interface Item {
   image_filename: string;
 };
 
-const server = process.env.REACT_APP_API_URL || 'http://127.0.0.1:9000';
-const placeholderImage = process.env.PUBLIC_URL + '/logo192.png';
+const server = process.env.REACT_APP_API_URL || 'http://0.0.0.0:9000';
 
 interface Prop {
   reload?: boolean;
@@ -50,8 +49,7 @@ export const ItemList: React.FC<Prop> = (props) => {
       {items.map((item) => {
         return (
           <div key={item.id} className='ItemList'>
-            {/* TODO: Task 1: Replace the placeholder image with the item image */}
-            <img src={placeholderImage} />
+            <img src={`${server}/image/${item.image_filename}`} />
             <p>
               <span>Name: {item.name}</span>
               <br />
