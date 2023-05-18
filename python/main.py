@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 work_dir = pathlib.Path(__file__).parent.resolve()
-PATH_DB = "db/mercari.sqlite3"
+PATH_DB = "./db/mercari.sqlite3"
 PATH_IMAGES = work_dir
 PATH_DEFAULT_IMAGE = work_dir / "default_images"
 
