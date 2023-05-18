@@ -9,7 +9,7 @@ import hashlib
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
-logger.level = logging.INFO
+logger.level = logging.INFO #DEBUGに変えるとImage not foundが出る
 images = pathlib.Path(__file__).parent.resolve() / "images"
 origins = [ os.environ.get('FRONT_URL', 'http://localhost:3000') ]
 app.add_middleware(
@@ -61,7 +61,7 @@ def add_item(name: str = Form(...), category: str = Form(...),image: str = Form(
     return {"message": f"item received: {name}"}
 
 @app.get("/items")
-def getItemList():
+def get_item_list():
     try:
         with open('items.json', 'r') as f:
             data = json.load(f) #data: dict
@@ -69,6 +69,14 @@ def getItemList():
         data = {"items": []}
     return data
 
+@app.get("/items/{item_id}")
+def get_item(item_id: int):
+    try:
+        with open('items.json', 'r') as f:
+            data = json.load(f) #data: dict
+    except FileNotFoundError:
+        data = {"items": []}
+    return data["items"][item_id]
 
 
 
