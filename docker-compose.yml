@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: typescript/simple-mercari-web
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:9000
+  app:
+    build:
+      context: .
+      dockerfile: python/Dockerfile
+    ports:
+      - "9000:9000"
+    environment:
+      FRONT_URL: http://localhost:3000
