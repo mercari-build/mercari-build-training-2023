@@ -2,13 +2,14 @@ package main
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"io/ioutil"
-	"mercari-build-training-2023/db"
+	"mercari-build-training-2023/app/db"
 	"net/http"
 	"os"
 	"path"
@@ -16,10 +17,12 @@ import (
 	"strings"
 )
 
+var itemDb *db.ItemsDB
+
 const (
-	ImgDir = "images"
+	ImgDir = "../images"
 	dbType = "sqlite3"
-	dbPath = "mercari.sqlite3"
+	dbPath = "sql/mercari.sqlite3"
 )
 
 type Response struct {
@@ -32,33 +35,6 @@ func root(c echo.Context) error {
 }
 
 func addItem(c echo.Context) error {
-	database, err := db.OpenDb(dbType, dbPath)
-	if err != nil {
-		fmt.Printf("error opening database: %v\n", err)
-		return err
-	}
-	defer database.Close()
-	// read the SQL file
-	itemSql, err := os.Open("db/items.db")
-	if err != nil {
-		fmt.Printf("error opening SQL file: %v\n", err)
-		return err
-	}
-	defer itemSql.Close()
-	// read the content
-	sqlBytes, err := ioutil.ReadAll(itemSql)
-	if err != nil {
-		fmt.Printf("error reading SQL file: %v\n", err)
-		return err
-	}
-	_, err = database.Exec(string(sqlBytes))
-	if err != nil {
-		fmt.Printf("error executing SQL statements: %v\n", err)
-		return err
-	} else {
-		fmt.Println("successfully execute SQL statements!")
-	}
-
 	// Get form data
 	name := c.FormValue("name")
 	c.Logger().Infof("Receive item: %s", name)
@@ -99,7 +75,7 @@ func addItem(c echo.Context) error {
 	}
 
 	// add item
-	err = db.AddItemToDb(itemData, database)
+	err = itemDb.AddItemToDb(itemData)
 	if err != nil {
 		fmt.Printf("error adding item to db: %v\n", err)
 		return err
@@ -111,13 +87,7 @@ func addItem(c echo.Context) error {
 }
 
 func getItems(c echo.Context) error {
-	database, err := db.OpenDb(dbType, dbPath)
-	if err != nil {
-		fmt.Printf("error opening database: %v\n", err)
-		return err
-	}
-	defer database.Close()
-	itemList, err := db.GetAllItems(database)
+	itemList, err := itemDb.GetAllItems()
 	if err != nil {
 		fmt.Printf("error getting items: %v\n", err)
 		return err
@@ -126,16 +96,9 @@ func getItems(c echo.Context) error {
 }
 
 func searchItems(c echo.Context) error {
-	// open the database
-	database, err := db.OpenDb(dbType, dbPath)
-	if err != nil {
-		fmt.Printf("error opening database: %v\n", err)
-		return err
-	}
-	defer database.Close()
 	// get the query parameters
 	key := c.QueryParam("keyword")
-	items, err := db.SearchItems(key, database)
+	items, err := itemDb.SearchItems(key)
 	if err != nil {
 		fmt.Printf("error searching for items: %v\n", err)
 		return err
@@ -151,15 +114,7 @@ func getItemsDetail(c echo.Context) error {
 		fmt.Printf("error converting itemId to int: %v\n", err)
 		return err
 	}
-	// database operation
-	database, err := db.OpenDb(dbType, dbPath)
-	if err != nil {
-		fmt.Printf("error opening database: %v\n", err)
-		return err
-	}
-	defer database.Close()
-
-	item, err := db.GetItemById(id, database)
+	item, err := itemDb.GetItemById(id)
 	if err != nil {
 		fmt.Printf("error getting item by id: %v\n", err)
 		return err
@@ -214,6 +169,37 @@ func main() {
 	e.GET("/image/:imageFilename", getImg)
 
 	e.GET("/search", searchItems)
+
+	// Database Initialization
+	database, err := sql.Open(dbType, dbPath)
+	if err != nil {
+		fmt.Printf("error opening database: %v\n", err)
+		return
+	}
+	defer database.Close()
+	// Open and read sql file
+	sqlFile, err := os.Open("sql/items.db")
+	if err != nil {
+		fmt.Printf("error opening SQL file: %v\n", err)
+		return
+	}
+	defer sqlFile.Close()
+	sqlData, err := ioutil.ReadAll(sqlFile)
+	if err != nil {
+		fmt.Printf("error reading SQL data: %v\n", err)
+		return
+	}
+	_, err = database.Exec(string(sqlData))
+	if err != nil {
+		fmt.Printf("error executing SQL statements: %v\n", err)
+		return
+	} else {
+		fmt.Printf("successfully execute SQL statements!")
+	}
+	// Construct a instance of ItemsDB
+	itemDb = &db.ItemsDB{
+		Db: database,
+	}
 
 	// Start server
 	e.Logger.Fatal(e.Start(":9000"))
