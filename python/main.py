@@ -7,6 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import hashlib
 from typing import Optional
+import sqlite3
+
+DATABASE="../db/mercari.sqlite3"
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -49,37 +52,47 @@ def add_item(name: str = Form(...), category: str = Form(None),image: Optional[s
     with open(os.path.join(image_folder, file_name), 'wb') as f:
         f.write(content)
 
-    new_item = {
-        "name": name,
-        "category": category,
-        "image_filename": f"{hash_value}.jpg"
-    }
-    data["items"].append(new_item)
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO items (name, category, image_name) VALUES (?, ?, ?)",
+            (name, category, f"{hash_value}.jpg")
+        )
+        conn.commit()
+        item_id = cursor.lastrowid
+        return {"message": "Item added successfully", "item_id": item_id}
 
-    with open('items.json', 'w') as outputf:
-        json.dump(data, outputf, indent=4)
-
-
-    logger.info(f"Receive item: {name}")
-    return {"message": f"item received: {name}"}
 
 @app.get("/items")
 def get_item_list():
-    try:
-        with open('items.json', 'r') as f:
-            data = json.load(f) #data: dict
-    except FileNotFoundError:
-        data = {"items": []}
-    return data
+
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM items")
+        items = cursor.fetchall()
+        return {"items": items}
+    # try:
+    #     with open('items.json', 'r') as f:
+    #         data = json.load(f) #data: dict
+    # except FileNotFoundError:
+    #     data = {"items": []}
+    # return data
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
-    try:
-        with open('items.json', 'r') as f:
-            data = json.load(f) #data: dict
-    except FileNotFoundError:
-        data = {"items": []}
-    return data["items"][item_id]
+    # try:
+    #     with open('items.json', 'r') as f:
+    #         data = json.load(f) #data: dict
+    # except FileNotFoundError:
+    #     data = {"items": []}
+    # return data["items"][item_id]
+    with sqlite3.connect(DATABASE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM items WHERE id=?", (item_id,))
+        item = cursor.fetchone()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return {"item": item}
 
 
 
