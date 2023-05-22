@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import hashlib
+from typing import Optional
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn")
@@ -25,7 +26,7 @@ def root():
     return {"message": "Hello, world!"}
 
 @app.post("/items")
-def add_item(name: str = Form(...), category: str = Form(...),image: str = Form(...)):
+def add_item(name: str = Form(...), category: str = Form(None),image: Optional[str] = Form("images/default.jpg")): #curlコマンドからの相対パス
     
     try:
         with open('items.json', 'r') as f:
@@ -38,13 +39,15 @@ def add_item(name: str = Form(...), category: str = Form(...),image: str = Form(
     if not os.path.exists(image_folder):
         os.makedirs(image_folder)
 
+
+
+
     with open(image, 'rb') as imagefile:
         content = imagefile.read()
     hash_value = hashlib.sha256(content).hexdigest()
     file_name = f"{hash_value}.jpg"
     with open(os.path.join(image_folder, file_name), 'wb') as f:
         f.write(content)
-
 
     new_item = {
         "name": name,
