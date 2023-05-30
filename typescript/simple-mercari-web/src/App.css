@@ -24,6 +24,11 @@
   color: white;
 }
 
+.Grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
 .ItemList {
   background-color: #222427;
   min-height: 8vh;

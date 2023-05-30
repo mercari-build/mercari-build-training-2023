@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 interface Item {
   id: number;
   name: string;
-  category: string;
+  category_name: string;
   image_filename: string;
 };
 
@@ -46,16 +46,15 @@ export const ItemList: React.FC<Prop> = (props) => {
   }, [reload]);
 
   return (
-    <div>
+    <div className='Grid'>
       {items.map((item) => {
         return (
           <div key={item.id} className='ItemList'>
-            {/* TODO: Task 1: Replace the placeholder image with the item image */}
-            <img src={placeholderImage} />
+            <img src= {server + '/image/' + item.id+ '.jpg'} width="250" height="250"/>
             <p>
               <span>Name: {item.name}</span>
               <br />
-              <span>Category: {item.category}</span>
+              <span>Category: {item.category_name}</span>
             </p>
           </div>
         )
