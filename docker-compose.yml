@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  backend:
+    build: ./go
+    ports:
+      - "9000:9000"
+    volumes:
+      - "./go:/backendcode"
+    environment:
+      FLASK_DEBUG: "true"
+      FRONT_URL: "http://localhost:3000"
+  frontend:
+    build: ./typescript/simple-mercari-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./typescript/simple-mercari-web:/frontendcode"
+    environment:
+      REACT_APP_API_URL: "http://localhost:9000"
+      FLASK_DEBUG: "true"

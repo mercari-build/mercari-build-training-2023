@@ -4,6 +4,7 @@ WORKDIR /project
 
 COPY go.mod go.sum ./
 COPY app ./app/
+COPY images ./images/
 
 RUN addgroup -S mercari && adduser -S trainee -G mercari
 RUN chown -R trainee:mercari /project/app
