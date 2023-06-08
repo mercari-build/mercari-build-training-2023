@@ -25,7 +25,10 @@ def root():
     return {"message": "Hello, world!"}
 
 @app.post("/items") #POST /itemsのエンドポイントはnameという情報を受け取る
-def add_item(name: str = Form(...), category: str = Form(...), image: UploadFile = Form(...)): #add_itemを定義する
+def add_item(name: str = Form(None), category: str = Form(None), image: UploadFile = Form(None)): #add_itemを定義する
+    if name is None:
+        print("Error!")
+        
     logger.info(f"Receive item: {name}, {category}") #[nameの値]と[categoryの値]をログに出力する
     logger.info(f"Can Read Image: {image}") #[imageの値]をログに出力する
     data = image.file.read() #変数「image」に格納された画像ファイルの内容を読み込み、変数「data」に代入する
