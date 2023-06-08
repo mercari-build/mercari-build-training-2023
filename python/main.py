@@ -1,9 +1,7 @@
 import os
 import logging
 import pathlib
-import json
-import hashlib
-from fastapi import FastAPI, Form, HTTPException, UploadFile
+from fastapi import FastAPI, Form, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -78,3 +76,5 @@ async def get_image(image_filename):
     if not image.exists():
         logger.debug(f"Image not found: {image}")
         image = images / "default.jpg"
+
+    return FileResponse(image)
