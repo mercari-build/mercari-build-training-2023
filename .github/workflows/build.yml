@@ -3,8 +3,9 @@ run-name: ${{ github.actor }} is building ${{ github.ref_name }} 🚀
 on: [push]
 
 env:
+ SLACK_WEBHOOK: https://hooks.slack.com/services/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
  REGISTRY: ghcr.io
- IMAGE_NAME: ${{ github.repository }}
+ IMAGE_NAME: kumanotani/mercari-build-training-2023
 
 jobs:
   build:
@@ -37,10 +38,10 @@ jobs:
         echo 'Tag: ${{ steps.meta.outputs.tags }}'
         echo 'Label: ${{ steps.meta.labels.tags }}'
 
-#    - name: Build and push Docker image
-#      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-#      with:
-#       context: <go or python>
-#       push: true
-#       tags: ${{ steps.meta.outputs.tags }}
-#       labels: ${{ steps.meta.outputs.labels }}
+    - name: Build and push Docker image
+      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      with:
+       context: <go or python>
+       push: true
+       tags: ${{ steps.meta.outputs.tags }}
+       labels: ${{ steps.meta.outputs.labels }}
